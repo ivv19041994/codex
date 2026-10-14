@@ -3527,7 +3527,7 @@ async fn pre_tool_use_json_deny_blocks_exec_command_before_execution() -> Result
     let marker_dir = TempDir::new()?;
     let marker = marker_dir.path().join("pretooluse-exec-command-marker");
     let command = format!("git init --quiet {}", marker.display());
-    let args = serde_json::json!({ "cmd": command });
+    let args = serde_json::json!({ "cmd": command, "workdir": marker_dir.path() });
     let responses = mount_sse_sequence(
         &server,
         vec![
@@ -3589,6 +3589,10 @@ async fn pre_tool_use_json_deny_blocks_exec_command_before_execution() -> Result
     assert_eq!(hook_inputs[0]["tool_name"], "Bash");
     assert_eq!(hook_inputs[0]["tool_use_id"], call_id);
     assert_eq!(hook_inputs[0]["tool_input"]["command"], command);
+    assert_eq!(
+        hook_inputs[0]["tool_input"]["workdir"],
+        serde_json::json!(marker_dir.path())
+    );
     let transcript_path = hook_inputs[0]["transcript_path"]
         .as_str()
         .expect("pre tool use hook transcript_path");

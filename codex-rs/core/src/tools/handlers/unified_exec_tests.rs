@@ -486,6 +486,31 @@ async fn exec_command_pre_tool_use_payload_uses_raw_command() {
 }
 
 #[tokio::test]
+async fn exec_command_pre_tool_use_payload_preserves_workdir() {
+    for workdir in ["/tmp/worktree", "../worktree", ""] {
+        let invocation = invocation_for_payload(
+            "exec_command",
+            "hook-workdir",
+            ToolPayload::Function {
+                arguments: serde_json::json!({
+                    "cmd": "pwd",
+                    "workdir": workdir,
+                })
+                .to_string(),
+            },
+        )
+        .await;
+        assert_eq!(
+            ExecCommandHandler::default().pre_tool_use_payload(&invocation),
+            Some(crate::tools::registry::PreToolUsePayload {
+                tool_name: HookToolName::bash(),
+                tool_input: serde_json::json!({ "command": "pwd", "workdir": workdir }),
+            })
+        );
+    }
+}
+
+#[tokio::test]
 async fn exec_command_pre_tool_use_payload_skips_write_stdin() {
     let payload = ToolPayload::Function {
         arguments: serde_json::json!({ "chars": "echo hi" }).to_string(),
